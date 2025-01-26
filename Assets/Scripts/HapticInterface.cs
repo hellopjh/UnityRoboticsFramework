@@ -10,6 +10,10 @@ using HapticGUI;
 using System.Drawing.Text;
 using UnityEngine.UIElements;
 using System.Transactions;
+using System.Runtime.Remoting.Messaging;
+using Unity.VisualScripting;
+
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -86,7 +90,14 @@ namespace BiPanda
             public int[] buttons_prev;
             public int inkwell;
             public double[] position;
+            public double[] rotation;
             public double[] velocity;
+
+            public double[] workspace_usable;
+            public double[] workspace_max;
+            public double max_stiffness;
+            public double max_damping;
+            public double max_force;
 
             public HapticDeviceInfo(string _name)
             {
@@ -95,8 +106,12 @@ namespace BiPanda
                 buttons_curr = new int[4];
                 buttons_prev = new int[4];
                 inkwell = 0;
-                position = new double[4];
-                velocity = new double[4];
+                position = new double[3];
+                rotation = new double[3];
+                velocity = new double[6];
+
+                workspace_usable = new double[6];
+                workspace_max = new double[6];
             }
         }
         HapticDeviceInfo left_haptic;
@@ -106,8 +121,8 @@ namespace BiPanda
         {
             left_haptic = new HapticDeviceInfo("Left Device");
             right_haptic = new HapticDeviceInfo("Right Device");
-            InitializeHapticDevice(left_haptic.name);
-            InitializeHapticDevice(right_haptic.name);
+            InitializeHapticDevice(left_haptic);
+            InitializeHapticDevice(right_haptic);
 
         }
         void Start()
@@ -117,35 +132,40 @@ namespace BiPanda
 
         void Update()
         {
-            UpdateDeviceInformation(left_haptic);
-            GetDeviceButtonStatus(left_haptic);
-
-            UpdateDeviceInformation(right_haptic);
-            GetDeviceButtonStatus(right_haptic);
+            //UpdateDeviceInformation(left_haptic);
+            //UpdateDeviceInformation(right_haptic);
 
             //if (left_haptic.button_status == 2 && right_haptic.button_status == 2)
             //{
-            //    Debug.Log(string.Format("<color=green><b>[L]</b> {0:N3}, {1:N3}, {2:N3}. <b>[R]</b> {3:N3}, {4:N3}, {5:N3}.</color>"
+            //    Debug.Log(string.Format("<color=green><b>[L]</b> {0:N3}, {1:N3}, {2:N3}, {3:N3}, {4:N3}, {5:N3}. <b>[R]</b> {6:N3}, {7:N3}, {8:N3}, {9:N3}, {10:N3}, {11:N3}.</color>"
             //        , left_haptic.position[0], left_haptic.position[1], left_haptic.position[2]
-            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]));
+            //        , left_haptic.rotation[0], left_haptic.rotation[1], left_haptic.rotation[2]
+            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]
+            //        , right_haptic.rotation[0], right_haptic.rotation[1], right_haptic.rotation[2]));
             //}
             //else if (left_haptic.button_status == 2 && right_haptic.button_status != 2)
             //{
-            //    Debug.Log(string.Format("<color=green><b>[L]</b> {0:N3}, {1:N3}, {2:N3}.</color> [R] {3:N3}, {4:N3}, {5:N3}."
+            //    Debug.Log(string.Format("<color=green><b>[L]</b> {0:N3}, {1:N3}, {2:N3}, {3:N3}, {4:N3}, {5:N3}.</color> [R] {6:N3}, {7:N3}, {8:N3}, {9:N3}, {10:N3}, {11:N3}."
             //        , left_haptic.position[0], left_haptic.position[1], left_haptic.position[2]
-            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]));
+            //        , left_haptic.rotation[0], left_haptic.rotation[1], left_haptic.rotation[2]
+            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]
+            //        , right_haptic.rotation[0], right_haptic.rotation[1], right_haptic.rotation[2]));
             //}
             //else if (left_haptic.button_status != 2 && right_haptic.button_status == 2)
             //{
-            //    Debug.Log(string.Format("[L] {0:N3}, {1:N3}, {2:N3}. <color=green><b>[R]</b> {3:N3}, {4:N3}, {5:N3}.</color>"
+            //    Debug.Log(string.Format("[L] {0:N3}, {1:N3}, {2:N3}, {3:N3}, {4:N3}, {5:N3}. <color=green><b>[R]</b> {6:N3}, {7:N3}, {8:N3}, {9:N3}, {10:N3}, {11:N3}.</color>"
             //        , left_haptic.position[0], left_haptic.position[1], left_haptic.position[2]
-            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]));
+            //        , left_haptic.rotation[0], left_haptic.rotation[1], left_haptic.rotation[2]
+            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]
+            //        , right_haptic.rotation[0], right_haptic.rotation[1], right_haptic.rotation[2]));
             //}
             //else
             //{
-            //    Debug.Log(string.Format("[L] {0:N3}, {1:N3}, {2:N3}. [R] {3:N3}, {4:N3}, {5:N3}."
+            //    Debug.Log(string.Format("[L] {0:N3}, {1:N3}, {2:N3}, {3:N3}, {4:N3}, {5:N3}. [R] {6:N3}, {7:N3}, {8:N3}, {9:N3}, {10:N3}, {11:N3}."
             //        , left_haptic.position[0], left_haptic.position[1], left_haptic.position[2]
-            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]));
+            //        , left_haptic.rotation[0], left_haptic.rotation[1], left_haptic.rotation[2]
+            //        , right_haptic.position[0], right_haptic.position[1], right_haptic.position[2]
+            //        , right_haptic.rotation[0], right_haptic.rotation[1], right_haptic.rotation[2]));
             //}
         }
 
@@ -155,9 +175,9 @@ namespace BiPanda
         }
 
         #region HapticDevice
-        public bool InitializeHapticDevice(string _dev_name)
+        public bool InitializeHapticDevice(HapticDeviceInfo _handler)
         {
-            DeviceHHD = initDevice(_dev_name);
+            DeviceHHD = initDevice(_handler.name);
             if (DeviceHHD < 0)
             {
                 // error
@@ -167,13 +187,16 @@ namespace BiPanda
             else
             {
                 StringBuilder _sb = new StringBuilder(256);
-                getDeviceSN(_dev_name, _sb, _sb.Capacity);
+                getDeviceSN(_handler.name, _sb, _sb.Capacity);
                 string _serial_number = _sb.ToString();
                 _sb.Clear();
-                getDeviceModel(_dev_name, _sb, _sb.Capacity);
+                getDeviceModel(_handler.name, _sb, _sb.Capacity);
                 string _model_type = _sb.ToString();
-                Debug.Log(string.Format("<b>[InitHaptic::{0}]</b> Hatic device is connected. (Model: {1}, SN: {2}"
-                    , _dev_name, _serial_number, _model_type));
+                getDeviceMaxValues(_handler.name, ref _handler.max_stiffness, ref _handler.max_damping, ref _handler.max_force);
+                getWorkspaceArea(_handler.name, _handler.workspace_usable, _handler.workspace_max);
+
+                Debug.Log(string.Format("<b>[InitHaptic::{0}]</b> Hatic device is connected. (Model: {1}, SN: {2}, Fmax: {3:N3}"
+                    , _handler.name, _serial_number, _model_type, _handler.max_force));
                 return true;
             }
         }
@@ -187,24 +210,30 @@ namespace BiPanda
         public void UpdateDeviceInformation(HapticDeviceInfo _handler)
         {
             double[] _pos = new double[3];
+            double[] _rot = new double[3];
+            double[] _q = new double[3];
+            double[] _gimbal = new double[3];
             double[] _vel = new double[3];
             double[] _trans_mat = new double[16];
 
             getPosition(_handler.name, _pos);
+            getJointAngles(_handler.name, _q, _gimbal);
+            GetHapticRotation(_handler, ref _rot);
             getVelocity(_handler.name, _vel);
             getTransform(_handler.name, _trans_mat);
+            GetDeviceButtonStatus(_handler);
 
             for (int i = 0; i < 3; i++)
             {
                 _handler.position[i] = _pos[i] * 0.001;  // convert from mm to m
+                _handler.rotation[i] = _rot[i];
                 _handler.velocity[i] = _vel[i] * 0.001;
             }
         }
 
         public void GetDeviceButtonStatus(HapticDeviceInfo _handler)
-        {
+        {            
             int[] _tmp_buttons = new int[4];
-            for (int i = 0; i < 4; i++) _handler.buttons_prev[i] = _handler.buttons_curr[i];
             getButtons(_handler.name, _handler.buttons_curr, _tmp_buttons, ref _handler.inkwell);
             if (_handler.buttons_prev[0] == 0 && _handler.buttons_curr[0] == 1)
             {
@@ -212,14 +241,267 @@ namespace BiPanda
                 //Debug.Log(string.Format("<b>[Haptic::Event]</b> button is pressed ({0})."
                 //    , _handler.name));
             }
-            if (_handler.buttons_prev[0] == 1 && _handler.buttons_curr[0] == 1)
+            else if (_handler.buttons_prev[0] == 1 && _handler.buttons_curr[0] == 1)
             {
                 _handler.button_status = 2;
             }
-            if (_handler.buttons_prev[0] == 1 && _handler.buttons_curr[0] == 0)
+            else if (_handler.buttons_prev[0] == 1 && _handler.buttons_curr[0] == 0)
             {
                 _handler.button_status = 3;
             }
+            else if (_handler.buttons_prev[0] == 0 && _handler.buttons_curr[0] == 0)
+            {
+                _handler.button_status = 0;
+            }
+            for (int i = 0; i < 4; i++) _handler.buttons_prev[i] = _handler.buttons_curr[i];
+        }
+
+        public void GetHapticStatus(ref int button_left, ref float[] pose_left, ref int button_right, ref float[] pose_right)
+        {
+            UpdateDeviceInformation(left_haptic);
+            UpdateDeviceInformation(right_haptic);
+
+            button_left = left_haptic.button_status;
+            button_right = right_haptic.button_status;
+            for(int i=0; i<3; i++)
+            {
+                pose_left[i] = (float)left_haptic.position[i];
+                pose_left[i + 3] = (float)left_haptic.rotation[i];
+                pose_right[i] = (float)right_haptic.position[i];
+                pose_right[i + 3] = (float)right_haptic.rotation[i];
+            }
+        }
+
+        public void SetHapticForce(float[] f_left, float[] f_right)
+        {
+            double tmp_max_force = 0.7;
+            Vector3 f_left_vec3 = new Vector3(f_left[0], f_left[1], f_left[2]);
+            double f_left_magnitude = (double)f_left_vec3.magnitude;
+            double[] f_left_arr = new double[3];
+            if (f_left_magnitude >= tmp_max_force)
+            {
+                for(int i=0; i<3; i++)
+                {
+                    f_left_arr[i] = (double)f_left_vec3[i] * (tmp_max_force / f_left_magnitude);
+                }
+                f_left_magnitude = tmp_max_force;
+            }
+            else
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    f_left_arr[i] = (double)f_left_vec3[i];
+                }
+            }
+            if (left_haptic.button_status == 2)
+            {
+                setConstantForceValues(left_haptic.name, f_left_arr, f_left_magnitude);
+            }
+            else
+            {
+                setConstantForceValues(left_haptic.name, f_left_arr, 0);
+            }
+
+
+            Vector3 f_right_vec3 = new Vector3(f_right[0], f_right[1], f_right[2]);
+            double f_right_magnitude = (double)f_right_vec3.magnitude;
+            double[] f_right_arr = new double[3];
+            if (f_right_magnitude >= tmp_max_force)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    f_right_arr[i] = (double)f_right_vec3[i] * (tmp_max_force / f_right_magnitude);
+                }
+                f_right_magnitude = tmp_max_force;
+            }
+            else
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    f_right_arr[i] = (double)f_right_vec3[i];
+                }
+            }
+            if (right_haptic.button_status == 2)
+            {
+                setConstantForceValues(right_haptic.name, f_right_arr, f_right_magnitude);
+            }
+            else
+            {
+                setConstantForceValues(right_haptic.name, f_right_arr, 0);
+            }
+        }
+
+        public void GetHapticTransform(ref double[] res)
+        {
+            //double[] res_mat = new double[16];
+            getTransform(left_haptic.name, res);
+            //Debug.Log(string.Format("[Transform-Position] {0:N3}, {1:N3}, {2:N3}."
+            //    , res[3], res[7], res[11]));
+        }
+
+        public void GetHapticRotation(HapticDeviceInfo _handler, ref double[] vec)
+        {
+            double[] res_mat = new double[16];
+            double[] rot_mat = new double[9];
+
+            getTransform(_handler.name, res_mat);
+            rot_mat = RfromSE3(res_mat);
+            vec = SO3ToEuler(rot_mat);
+        }
+
+        public double[] SO3ToVec(double[] input)
+        {
+            // rotation matrix to vector
+            // 아래로 ordering
+            // (00)0 (01)3 (02)6
+            // (10)1 (11)4 (12)7
+            // (20)2 (21)5 (22)8
+
+            double[] res = new double[3];
+            double th_x, th_y, th_z;
+
+            //th_x = -Math.Asin(input[7]);                // return radian
+            //th_y = Math.Atan2(input[6], input[8]);
+            //th_z = Math.Atan2(input[1], input[4]);
+            double angle = Math.Acos((input[0] + input[4] + input[8] - 1) / 2);
+            th_x = (input[5] - input[7]) / Math.Sqrt(Math.Pow(input[5] - input[7], 2) + Math.Pow(input[6] - input[2], 2) + Math.Pow(input[1] - input[3], 2));
+            th_y = (input[6] - input[2]) / Math.Sqrt(Math.Pow(input[5] - input[7], 2) + Math.Pow(input[6] - input[2], 2) + Math.Pow(input[1] - input[3], 2));
+            th_z = (input[1] - input[3]) / Math.Sqrt(Math.Pow(input[5] - input[7], 2) + Math.Pow(input[6] - input[2], 2) + Math.Pow(input[1] - input[3], 2));
+            res[0] = th_x * angle;
+            res[1] = th_y * angle;
+            res[2] = th_z * angle;
+            return res;
+        }
+
+        public double[] RfromSE3(Matrix4x4 mat)
+        {
+            double[] res = new double[9];
+            res[0] = mat[0];
+            res[1] = mat[1];
+            res[2] = mat[2];
+            res[3] = mat[4];
+            res[4] = mat[5];
+            res[5] = mat[6];
+            res[6] = mat[8];
+            res[7] = mat[9];
+            res[8] = mat[10];
+            return res;
+        }
+
+        public double[] RfromSE3(double[] mat)
+        {
+            double[] res = new double[9];
+            res[0] = mat[0];
+            res[1] = mat[1];
+            res[2] = mat[2];
+            res[3] = mat[4];
+            res[4] = mat[5];
+            res[5] = mat[6];
+            res[6] = mat[8];
+            res[7] = mat[9];
+            res[8] = mat[10];
+            return res;
+        }
+
+        public double[] VecToSO3(double[] vec)
+        {
+            Vector3 aa = new Vector3((float)vec[0], (float)vec[1], (float)vec[2]);
+            float aa_angle = aa.magnitude;
+            Vector3 aa_axis = aa.normalized;
+            
+            // 아래로 ordering
+            // (00)0 (01)3 (02)6
+            // (10)1 (11)4 (12)7
+            // (20)2 (21)5 (22)8
+
+            double[] mat = new double[9];
+            //double t = (double)(1f - Mathf.Cos(aa_angle));
+            //double c = (double)(Mathf.Cos(aa_angle));
+            //double s = (double)(Mathf.Sin(aa_angle));
+            //mat[0] = t * aa_axis.x * aa_axis.x + c;
+            //mat[1] = t * aa_axis.x * aa_axis.y + aa_axis.z * s;
+            //mat[2] = t * aa_axis.x * aa_axis.z - aa_axis.y * s;
+            //mat[3] = t * aa_axis.x * aa_axis.y - aa_axis.z * s;
+            //mat[4] = t * aa_axis.y * aa_axis.y + c;
+            //mat[5] = t * aa_axis.y * aa_axis.z + aa_axis.x * s;
+            //mat[6] = t * aa_axis.x * aa_axis.z + aa_axis.y * s;
+            //mat[7] = t * aa_axis.y * aa_axis.z - aa_axis.x * s;
+            //mat[8] = t * aa_axis.z * aa_axis.z + c;
+
+            Vector3 sin_axis = Mathf.Sin(aa_angle) * aa_axis;
+            Vector3 cos_axis = (1f - Mathf.Cos(aa_angle)) * aa_axis;
+            float tmp = cos_axis.x * aa_axis.y;
+            mat[3] = tmp - sin_axis.z;
+            mat[1] = tmp + sin_axis.z;
+
+            tmp = cos_axis.x * aa_axis.z;
+            mat[6] = tmp + sin_axis.y;
+            mat[2] = tmp - sin_axis.y;
+
+            tmp = cos_axis.y * aa_axis.z;
+            mat[7] = tmp - sin_axis.x;
+            mat[5] = tmp + sin_axis.x;
+
+            mat[0] = cos_axis.x * aa_axis.x + Mathf.Cos(aa_angle);
+            mat[4] = cos_axis.y * aa_axis.y + Mathf.Cos(aa_angle);
+            mat[8] = cos_axis.z * aa_axis.z + Mathf.Cos(aa_angle);
+
+            Debug.Log(string.Format("angle: {0}, axis: {1}, {2}, {3}. cos(angle) = {4}", aa_angle, aa_axis.x, aa_axis.y, aa_axis.z, Mathf.Cos(aa_angle)));
+
+            return mat;
+        }
+
+        public double[] EulerToSO3(double[] euler)
+        {
+            // bank, attitude, heading
+            double sa = Math.Sin(euler[1]);
+            double ca = Math.Cos(euler[1]);
+            double sb = Math.Sin(euler[0]);
+            double cb = Math.Cos(euler[0]);
+            double sh = Math.Sin(euler[2]);
+            double ch = Math.Cos(euler[2]);
+
+            double[] mat = new double[9];
+            mat[0] = ch * ca;
+            mat[1] = sa;
+            mat[2] = -sh * ca;
+            mat[3] = -ch * sa * cb - sh * sb;
+            mat[4] = ca * cb;
+            mat[5] = sh * sa * cb - ch * sb;
+            mat[6] = ch * sa * sb - sh * cb;
+            mat[7] = -ca * sb;
+            mat[8] = -sh * sa * sb - ch * cb;
+
+            return mat;
+        }
+
+        public double[] SO3ToEuler(double[] mat)
+        {
+            double[] vec = new double[3];
+            vec[0] = Math.Atan2(-mat[7], mat[4]);
+            vec[1] = Math.Asin(mat[1]);
+            vec[2] = Math.Atan2(-mat[2], mat[0]);
+            return vec;
+        }
+
+        public void CompareRotationMatrix(ref double[] mat_a, ref double[] mat_b)
+        {
+            //double[] mat_a = new double[9];
+            //double[] mat_b = new double[9];
+            double[] vec = new double[3];
+
+            double[] res_mat = new double[16];
+            getTransform(left_haptic.name, res_mat);
+            mat_a = RfromSE3(res_mat);
+            //vec = SO3ToVec(mat_a);
+            //mat_b = VecToSO3(vec);
+            vec = SO3ToEuler(mat_a);
+            mat_b = EulerToSO3(vec);
+
+            //Vector3 aa = new Vector3((float)vec[0] * (180f/Mathf.PI), (float)vec[1] * (180f / Mathf.PI), (float)vec[2] * (180f / Mathf.PI));
+            //Quaternion quat = Quaternion.AngleAxis(aa.magnitude, aa.normalized);
+            //Matrix4x4 mat = Matrix4x4.Rotate(quat);
+            //mat_b = RfromSE3(mat);
         }
         #endregion
     }
