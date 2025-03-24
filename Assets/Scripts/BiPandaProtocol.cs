@@ -32,6 +32,7 @@ namespace BiPanda
         DCP_COMMAND_MOVE_JOINT_TO   = 1,
         DCP_COMMAND_MOVE_JOINT_BY   = 2,
         DCP_COMMAND_MOVE_TASK_TO    = 3,
+        DCP_COMMAND_TRACKER_ALIGN   = 4,
     }
 
     struct UserCommand

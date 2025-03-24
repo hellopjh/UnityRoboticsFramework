@@ -76,6 +76,13 @@ namespace BiPanda
         public double[] rmat_before;
         public double[] rmat_after;
 
+        // vive interface
+        [Header("Vive Interface")]
+        public int trigger;
+        public int menu;
+        public int grip;
+        private ViveInterface vive_handler;
+
         #endregion
 
         void Start()
@@ -133,6 +140,17 @@ namespace BiPanda
             rmat_before = new double[9];
             rmat_after = new double[9];
 
+            vive_handler = FindObjectOfType(typeof(ViveInterface)) as ViveInterface;
+            if (vive_handler != null)
+            {
+                Debug.Log("vive_handler is found.");
+            }
+            else
+            {
+                Debug.LogError("failed to find vive_handler.");
+            }
+            trigger = 0;
+            grip = 0;
         }
 
 
@@ -229,24 +247,31 @@ namespace BiPanda
                     //haptic.CompareRotationMatrix(ref rmat_before, ref rmat_after);
 
                     haptic.GetHapticStatus(ref button_left, ref raw_pose_left, ref button_right, ref raw_pose_right);
+                    vive_handler.GetViveStatus2(ref trigger, ref grip);
                     ProcessHapticCommand();
+
+                    if(trigger == 1)
+                    {
+                        command_id_1 += 100;
+                    }
+                    if (grip == 1)
+                    {
+                        command_id_2 += 100;
+                    }
 
                     robot.connect();
                     robot.update_teleoperation_command(command_id_1, command_float7_arr_1, command_id_2, command_float7_arr_2);
                     robot.update_robot_status(ref response_joint_pos_1, ref response_external_wrench_1, ref response_joint_pos_2, ref response_external_wrench_2);
                     robot.disconnect();
 
-                    //for(int i=0; i<3; i++)
-                    //{
-                    //    force_left[i] = response_external_wrench_1[i];
-                    //    force_right[i] = response_external_wrench_2[i];
-                    //}
-                    //force_left[0] = response_external_wrench_1[];
+                    force_left[0] = response_external_wrench_1[0] / 30;
                     force_left[1] = -response_external_wrench_1[2] / 30;
-                    //force_left[2] = -response_external_wrench_1[0] / 30;
-                    
-                    force_right[1] = -response_external_wrench_2[2] / 30;
-                    
+                    force_left[2] = -response_external_wrench_1[1] / 30;
+
+                    force_right[0] = -response_external_wrench_2[0] / 30;    // left robot 왼오
+                    force_right[1] = -response_external_wrench_2[2] / 30;   // left robot 위아래
+                    force_right[2] = response_external_wrench_2[1] / 30;    // left robot 앞뒤
+
                     haptic.SetHapticForce(force_left, force_right);
 
                     actual_loop_frequency = 1f / (float)span.TotalSeconds;
